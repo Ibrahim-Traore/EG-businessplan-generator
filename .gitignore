@@ -1,0 +1,69 @@
+# ── Variables d'environnement — ne jamais committer ──────────────────────────
+.env
+.env.local
+.env.*.local
+*.env.local
+*.env.*.local
+
+# ── Dépendances ───────────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+
+# ── Fichiers temporaires ──────────────────────────────────────────────────────
+tmp/
+frontend/tmp/
+*.tmp
+*.log
+
+# ── Livrables produits (données client — ne pas versionner) ──────────────────
+livrables/
+
+# ── Fichiers générés (Word, PDF) ──────────────────────────────────────────────
+*.docx
+*.pdf
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Node.js ───────────────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.npm/
+.yarn/
+
+# ── Système Windows ───────────────────────────────────────────────────────────
+$RECYCLE.BIN/
+*.lnk
+
+# ── Next.js build ─────────────────────────────────────────────────────────────
+.next/
+nextapp/.next/
+out/
+
+# ── Base de données SQLite locale ─────────────────────────────────────────────
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# ── Scripts de migration one-shot ─────────────────────────────────────────────
+nextapp/prisma/migrate-projects.js
+
+# ── Fichiers Claude locaux (données de session, permissions machine) ──────────
+.claude/projects/
+.claude/sessions/
+.claude/settings.local.json
+
+# ── Divers ────────────────────────────────────────────────────────────────────
+*.bak
