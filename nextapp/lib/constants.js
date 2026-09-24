@@ -19,7 +19,7 @@ export const STEP_MAX_TOKENS = {
   'modele-economique': 32000,
   'modele-financier':  32000,
   'audit-final':       32000,
-  'redacteur':         64000,
+  'redacteur':         32000,
 };
 
 export const CHAIN_ORDER = [

@@ -1,4 +1,5 @@
 export const runtime = 'nodejs';
+export const maxDuration = 300;
 
 import { auth }            from '@/lib/auth.js';
 import { requireProjectAccess } from '@/lib/project-auth.js';
