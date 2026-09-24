@@ -12,9 +12,9 @@ export async function GET(req, { params }) {
   if (error) return new Response(error, { status });
 
   const result = {};
-  for (const step of CHAIN_ORDER) {
-    const r = loadVerificationResult(cas, step);
+  await Promise.all(CHAIN_ORDER.map(async (step) => {
+    const r = await loadVerificationResult(cas, step);
     if (r) result[step] = r;
-  }
+  }));
   return NextResponse.json(result);
 }

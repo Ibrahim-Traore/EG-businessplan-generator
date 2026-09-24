@@ -1,6 +1,6 @@
 import path from 'path';
-import fs   from 'fs';
-import { LIVRABLES_DIR, getLivrablesForStep } from './constants.js';
+import { getLivrablesRelPathsForStep } from './constants.js';
+import { storageRead, storageWrite }   from './storage.js';
 
 const VERIFICATION_SCHEMAS = {
 
@@ -82,16 +82,16 @@ const VERIFICATION_SCHEMAS = {
   },
 };
 
-function readLivrablesForStep(cas, step) {
-  const files   = getLivrablesForStep(cas, step);
+async function readLivrablesForStep(cas, step) {
+  const paths   = getLivrablesRelPathsForStep(cas, step);
   const results = [];
-  for (const fp of files) {
-    if (!fs.existsSync(fp)) {
-      results.push({ file: path.basename(fp), content: null, missing: true });
-      continue;
+  for (const relPath of paths) {
+    const content = await storageRead(relPath);
+    if (content == null) {
+      results.push({ file: path.basename(relPath), content: null, missing: true });
+    } else {
+      results.push({ file: path.basename(relPath), content, missing: false, length: content.length });
     }
-    const content = fs.readFileSync(fp, 'utf-8');
-    results.push({ file: path.basename(fp), content, missing: false, length: content.length });
   }
   return results;
 }
@@ -100,7 +100,7 @@ export async function verifyStep(cas, step, anthropic) {
   const schema = VERIFICATION_SCHEMAS[step];
   if (!schema) throw new Error(`Aucun schéma de vérification pour l'étape : ${step}`);
 
-  const livrables = readLivrablesForStep(cas, step);
+  const livrables = await readLivrablesForStep(cas, step);
   const missing   = livrables.filter(l => l.missing);
 
   if (missing.length > 0) {
@@ -113,7 +113,7 @@ export async function verifyStep(cas, step, anthropic) {
       criteria:  schema.criteria.map(c => ({ criterion: c, result: 'FAIL', comment: 'Fichier absent' })),
       findings:  [`Fichier manquant : ${missing.map(l => l.file).join(', ')}`],
     };
-    saveVerificationResult(cas, step, result);
+    await saveVerificationResult(cas, step, result);
     return result;
   }
 
@@ -207,44 +207,30 @@ Règles de verdict :
     model: 'claude-haiku-4-5',
   };
 
-  saveVerificationResult(cas, step, result);
+  await saveVerificationResult(cas, step, result);
   return result;
 }
 
-function saveVerificationResult(cas, step, result) {
-  try {
-    const stepDirs = {
-      'cadrage-t1':        '01-cadrage',
-      'cadrage-t2':        '01-cadrage',
-      'analyste-marche':   '02-marche',
-      'modele-economique': '03-modele-economique',
-      'modele-financier':  '04-modele-financier',
-      'audit-final':       '05-audit',
-      'redacteur':         '06-livraison',
-    };
-    const dir = path.join(LIVRABLES_DIR, cas, stepDirs[step] || '');
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(
-      path.join(dir, `verification-${step}.json`),
-      JSON.stringify(result, null, 2),
-      'utf-8'
-    );
-  } catch {}
+const STEP_DIRS = {
+  'cadrage-t1':        '01-cadrage',
+  'cadrage-t2':        '01-cadrage',
+  'analyste-marche':   '02-marche',
+  'modele-economique': '03-modele-economique',
+  'modele-financier':  '04-modele-financier',
+  'audit-final':       '05-audit',
+  'redacteur':         '06-livraison',
+};
+
+async function saveVerificationResult(cas, step, result) {
+  const relPath = `livrables/${cas}/${STEP_DIRS[step] || ''}/verification-${step}.json`;
+  await storageWrite(relPath, JSON.stringify(result, null, 2));
 }
 
-export function loadVerificationResult(cas, step) {
-  const stepDirs = {
-    'cadrage-t1':        '01-cadrage',
-    'cadrage-t2':        '01-cadrage',
-    'analyste-marche':   '02-marche',
-    'modele-economique': '03-modele-economique',
-    'modele-financier':  '04-modele-financier',
-    'audit-final':       '05-audit',
-    'redacteur':         '06-livraison',
-  };
-  const fp = path.join(LIVRABLES_DIR, cas, stepDirs[step] || '', `verification-${step}.json`);
-  if (!fs.existsSync(fp)) return null;
-  try { return JSON.parse(fs.readFileSync(fp, 'utf-8')); }
+export async function loadVerificationResult(cas, step) {
+  const relPath = `livrables/${cas}/${STEP_DIRS[step] || ''}/verification-${step}.json`;
+  const content = await storageRead(relPath);
+  if (!content) return null;
+  try { return JSON.parse(content); }
   catch { return null; }
 }
 

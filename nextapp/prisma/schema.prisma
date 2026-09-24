@@ -19,11 +19,24 @@ model User {
 }
 
 model Project {
-  id        String   @id @default(cuid())
-  slug      String   @unique
+  id        String     @id @default(cuid())
+  slug      String     @unique
   name      String?
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  livrables Livrable[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Livrable {
+  id          String   @id @default(cuid())
+  projectSlug String
+  path        String
+  content     String
+  project     Project  @relation(fields: [projectSlug], references: [slug], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectSlug, path])
 }

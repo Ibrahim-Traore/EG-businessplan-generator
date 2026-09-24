@@ -1,15 +1,5 @@
-import path from 'path';
-import fs   from 'fs';
-import { AGENTS_DIR, buildSystemPrompt, STEP_MAX_TOKENS } from './constants.js';
-
-// ─── Sécurité : chemins confinés à AGENTS_DIR ────────────────────────────────
-function safePath(p) {
-  const resolved = path.isAbsolute(p) ? path.resolve(p) : path.resolve(AGENTS_DIR, p);
-  const base = AGENTS_DIR + path.sep;
-  if (resolved !== AGENTS_DIR && !resolved.startsWith(base))
-    throw new Error('Accès refusé : chemin hors du répertoire autorisé');
-  return resolved;
-}
+import { buildSystemPrompt, STEP_MAX_TOKENS } from './constants.js';
+import { storageRead, storageWrite, storageGlob } from './storage.js';
 
 // ─── Outils exposés à l'agent ────────────────────────────────────────────────
 const TOOLS = [
@@ -48,57 +38,16 @@ const TOOLS = [
 // ─── Exécution d'un outil ─────────────────────────────────────────────────────
 async function executeTool(name, input) {
   if (name === 'FileRead') {
-    const fp = safePath(input.file_path);
-    if (!fs.existsSync(fp)) return `Fichier introuvable : ${input.file_path}`;
-    return fs.readFileSync(fp, 'utf-8');
+    const content = await storageRead(input.file_path);
+    return content ?? `Fichier introuvable : ${input.file_path}`;
   }
-
   if (name === 'FileWrite') {
-    const fp = safePath(input.file_path);
-    fs.mkdirSync(path.dirname(fp), { recursive: true });
-    fs.writeFileSync(fp, input.content, 'utf-8');
-    return `Fichier écrit : ${input.file_path} (${input.content.length} caractères)`;
+    return await storageWrite(input.file_path, input.content);
   }
-
-  if (name === 'FileGlob') return globFiles(input.pattern);
-
+  if (name === 'FileGlob') {
+    return await storageGlob(input.pattern);
+  }
   return `Outil inconnu : ${name}`;
-}
-
-function globFiles(pattern) {
-  try {
-    if (!pattern.includes('*')) {
-      const dp = safePath(pattern);
-      if (!fs.existsSync(dp)) return `Répertoire introuvable : ${pattern}`;
-      if (fs.statSync(dp).isDirectory()) return fs.readdirSync(dp).join('\n') || '(vide)';
-      return pattern;
-    }
-    const parts    = pattern.replace(/\\/g, '/').split('/');
-    const fileGlob = parts[parts.length - 1];
-    const dirPart  = parts.slice(0, -1).join('/') || '.';
-    const dp       = safePath(dirPart);
-    if (!fs.existsSync(dp)) return '';
-    if (parts.some(p => p === '**')) return walkDir(dp, AGENTS_DIR).join('\n') || '(vide)';
-    const extFilter = fileGlob.startsWith('*') ? fileGlob.slice(1) : '';
-    return fs.readdirSync(dp)
-      .filter(f => !extFilter || f.endsWith(extFilter))
-      .map(f => path.relative(AGENTS_DIR, path.join(dp, f)).replace(/\\/g, '/'))
-      .join('\n') || '(vide)';
-  } catch (e) {
-    return `Erreur glob : ${e.message}`;
-  }
-}
-
-function walkDir(dirPath, baseDir) {
-  const results = [];
-  try {
-    for (const item of fs.readdirSync(dirPath)) {
-      const full = path.join(dirPath, item);
-      if (fs.statSync(full).isDirectory()) results.push(...walkDir(full, baseDir));
-      else results.push(path.relative(baseDir, full).replace(/\\/g, '/'));
-    }
-  } catch {}
-  return results;
 }
 
 // ─── Contrôleurs en cours ─────────────────────────────────────────────────────

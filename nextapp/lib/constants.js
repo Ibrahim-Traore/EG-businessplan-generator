@@ -149,6 +149,20 @@ export function getLivrablesForStep(cas, step) {
   return map[step] || [];
 }
 
+export function getLivrablesRelPathsForStep(cas, step) {
+  const b = `livrables/${cas}`;
+  const map = {
+    'cadrage-t1':        [`${b}/01-cadrage/questionnaire-v1.md`],
+    'cadrage-t2':        [`${b}/01-cadrage/fiche-projet-v1.md`, `${b}/01-cadrage/resume-executif-v1.md`, `${b}/01-cadrage/note-ecarts-v1.md`],
+    'analyste-marche':   [`${b}/02-marche/etude-marche-v1.md`],
+    'modele-economique': [`${b}/03-modele-economique/modele-economique-v1.md`],
+    'modele-financier':  [`${b}/04-modele-financier/modele-financier-v1.md`],
+    'audit-final':       [`${b}/05-audit/rapport-audit-v1.md`],
+    'redacteur':         [`${b}/06-livraison/business-plan-synthese-v1.md`],
+  };
+  return map[step] || [];
+}
+
 function loadAgentPrompt(agentFile) {
   const fp = path.join(AGENTS_PROMPTS_DIR, agentFile);
   if (!fs.existsSync(fp)) return '';
