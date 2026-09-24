@@ -14,12 +14,12 @@ const AGENTS_PROMPTS_DIR   = path.join(AGENTS_DIR, '.claude', 'agents');
 
 export const STEP_MAX_TOKENS = {
   'cadrage-t1':        8192,
-  'cadrage-t2':        16000,
-  'analyste-marche':   16000,
-  'modele-economique': 16000,
-  'modele-financier':  16000,
-  'audit-final':       16000,
-  'redacteur':         32000,
+  'cadrage-t2':        32000,
+  'analyste-marche':   32000,
+  'modele-economique': 32000,
+  'modele-financier':  32000,
+  'audit-final':       32000,
+  'redacteur':         64000,
 };
 
 export const CHAIN_ORDER = [
