@@ -19,7 +19,7 @@ export const STEP_MAX_TOKENS = {
   'modele-economique': 32000,
   'modele-financier':  32000,
   'audit-final':       32000,
-  'redacteur':         32000,
+  'redacteur':         16000,
 };
 
 export const CHAIN_ORDER = [
@@ -132,7 +132,7 @@ ${NO_QUESTION}`,
    - livrables/${cas}/05-audit/rapport-audit-v1.md
 2. Écris avec FileWrite la synthèse narrative dans livrables/${cas}/06-livraison/business-plan-synthese-v1.md.
    Structure : (1) Résumé exécutif, (2) Projet et porteurs, (3) Contexte réglementaire, (4) Marché (PESTEL synthétique + TAM/SAM/SOM), (5) Modèle économique, (6) Projections financières 5 ans avec tableaux, (7) Points d'attention et prochaines étapes.
-   Ton sobre, professionnel, sans balises taxonomiques visibles. Remplace [HYPOTHÈSE] par "selon les estimations disponibles". Longueur cible : 12 à 15 pages denses.
+   Ton sobre, professionnel, sans balises taxonomiques visibles. Remplace [HYPOTHÈSE] par "selon les estimations disponibles". Longueur cible : 6 à 8 pages denses — sois synthétique, privilégie les tableaux aux développements narratifs.
 3. Écris avec FileWrite un index des annexes dans livrables/${cas}/06-livraison/business-plan-annexes-v1.md.
    Cet index liste les 5 livrables techniques (chemins de fichiers + titre + date + résumé en 3 lignes chacun). Ne reproduis PAS leur contenu intégral — les fichiers source sont déjà disponibles.
 ${NO_QUESTION}`,
