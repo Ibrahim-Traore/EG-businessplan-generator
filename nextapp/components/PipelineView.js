@@ -240,7 +240,9 @@ export default function PipelineView({ cas }) {
             <h1 className="text-base sm:text-lg font-bold text-gray-900 capitalize truncate">
               {cas.replace(/-/g, ' ')}
             </h1>
-            <p className="text-xs text-eg-mid font-medium">Brief importé</p>
+            <p className="text-xs text-eg-mid font-medium">
+              {statuses.hasBrief === false ? 'Mode questionnaire' : 'Brief importé'}
+            </p>
           </div>
         </div>
         <input

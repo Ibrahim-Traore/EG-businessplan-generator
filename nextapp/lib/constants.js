@@ -60,9 +60,12 @@ RÈGLES D'EXÉCUTION IMPÉRATIVES :
 export const AGENT_COMMANDS = {
   'cadrage-t1': (cas) =>
     `Temps 1 — Questionnaire. Cas : ${cas}.
-1. Lis TOUS les fichiers dans livrables/${cas}/00-brief/ avec FileRead.
-2. Produis le questionnaire structuré.
-3. Écris le résultat avec FileWrite dans livrables/${cas}/01-cadrage/questionnaire-v1.md.
+1. Tente de lire les fichiers dans livrables/${cas}/00-brief/ avec FileGlob puis FileRead. Si le dossier est vide ou si FileRead retourne "Fichier introuvable", CONTINUE sans brief — c'est le mode questionnaire prévu, ne t'arrête pas.
+2. Produis le questionnaire structuré (20 à 30 questions maximum). Qu'un brief soit présent ou non, le questionnaire DOIT obligatoirement couvrir ces domaines : identité et porteurs du projet, description technique, marché cible et clients, concurrence et positionnement, modèle de revenus, investissements et financement, aspects juridiques et réglementaires, ressources humaines, calendrier et étapes clés, risques identifiés. Ne pose que les questions dont la réponse est absente du brief.
+3. En-tête OBLIGATOIRE en première ligne du fichier (copier exactement ce format) :
+   Agent : Cadrage | Version prompt : 1.0 | Date : <date du jour>
+   Cas pilote : ${cas} | Entrées : <liste des fichiers lus, ou "aucun brief — mode questionnaire autonome">
+4. Écris le résultat avec FileWrite dans livrables/${cas}/01-cadrage/questionnaire-v1.md.
 ${NO_QUESTION}`,
 
   'cadrage-t2': (cas) =>
