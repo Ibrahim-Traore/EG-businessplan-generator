@@ -1,9 +1,7 @@
 export const runtime = 'nodejs';
 
 import { requireProjectAccess }  from '@/lib/project-auth.js';
-import fs                        from 'fs';
-import path                      from 'path';
-import { LIVRABLES_DIR }         from '@/lib/constants.js';
+import { storageRead }           from '@/lib/storage.js';
 import { generateDocx }          from '@/lib/md-to-docx.js';
 
 export async function GET(req, { params }) {
@@ -15,15 +13,14 @@ export async function GET(req, { params }) {
   const { error, status } = await requireProjectAccess(cas);
   if (error) return new Response(error, { status });
 
-  const synthese = path.join(LIVRABLES_DIR, cas, '06-livraison', 'business-plan-synthese-v1.md');
-  const annexes  = path.join(LIVRABLES_DIR, cas, '06-livraison', 'business-plan-annexes-v1.md');
+  const synthese = `livrables/${cas}/06-livraison/business-plan-synthese-v1.md`;
+  const annexes  = `livrables/${cas}/06-livraison/business-plan-annexes-v1.md`;
 
-  const fp = fs.existsSync(synthese) ? synthese : fs.existsSync(annexes) ? annexes : null;
-  if (!fp) return new Response('Livrable non disponible', { status: 404 });
+  const mdContent = await storageRead(synthese) ?? await storageRead(annexes);
+  if (!mdContent) return new Response('Livrable non disponible', { status: 404 });
 
   try {
-    const mdContent = fs.readFileSync(fp, 'utf-8');
-    const buffer    = await generateDocx(mdContent, cas);
+    const buffer = await generateDocx(mdContent, cas);
 
     return new Response(buffer, {
       headers: {

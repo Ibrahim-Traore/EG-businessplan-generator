@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse }          from 'next/server';
 import { requireProjectAccess }  from '@/lib/project-auth.js';
+import { storageWrite }          from '@/lib/storage.js';
 import fs                        from 'fs';
 import path                      from 'path';
 import { LIVRABLES_DIR }         from '@/lib/constants.js';
@@ -14,9 +15,6 @@ export async function POST(req, { params }) {
 
   const { error, status } = await requireProjectAccess(cas);
   if (error) return new Response(error, { status });
-
-  const briefDir = path.join(LIVRABLES_DIR, cas, '00-brief');
-  fs.mkdirSync(briefDir, { recursive: true });
 
   const formData = await req.formData();
   const files    = formData.getAll('files');
@@ -34,8 +32,22 @@ export async function POST(req, { params }) {
     const ext      = path.extname(safeName).toLowerCase();
     if (!ALLOWED.includes(ext)) continue;
 
-    const bytes = Buffer.from(await file.arrayBuffer());
-    fs.writeFileSync(path.join(briefDir, safeName), bytes);
+    const bytes   = Buffer.from(await file.arrayBuffer());
+    const relPath = `livrables/${cas}/00-brief/${safeName}`;
+
+    if (['.md', '.txt'].includes(ext)) {
+      // Texte : stocké en DB (et filesystem local via storageWrite)
+      await storageWrite(relPath, bytes.toString('utf-8'));
+    } else {
+      // Binaire : placeholder en DB, fichier brut sur filesystem (local seulement)
+      await storageWrite(relPath, `[BINARY:${file.name}]`);
+      try {
+        const abs = path.join(LIVRABLES_DIR, cas, '00-brief', safeName);
+        fs.mkdirSync(path.dirname(abs), { recursive: true });
+        fs.writeFileSync(abs, bytes);
+      } catch {}
+    }
+
     saved.push(safeName);
   }
 

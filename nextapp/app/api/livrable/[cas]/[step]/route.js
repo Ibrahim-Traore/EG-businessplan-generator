@@ -1,9 +1,9 @@
 export const runtime = 'nodejs';
 
-import { NextResponse }          from 'next/server';
-import { requireProjectAccess }  from '@/lib/project-auth.js';
-import fs                        from 'fs';
-import { getLivrablesForStep }   from '@/lib/constants.js';
+import { NextResponse }                from 'next/server';
+import { requireProjectAccess }        from '@/lib/project-auth.js';
+import { getLivrablesRelPathsForStep } from '@/lib/constants.js';
+import { storageRead }                 from '@/lib/storage.js';
 
 export async function GET(req, { params }) {
   const { cas, step } = await params;
@@ -14,11 +14,11 @@ export async function GET(req, { params }) {
   const { error, status } = await requireProjectAccess(cas);
   if (error) return new Response(error, { status });
 
-  const files  = getLivrablesForStep(cas, step);
+  const paths  = getLivrablesRelPathsForStep(cas, step);
   const result = [];
-  for (const fp of files) {
-    if (!fs.existsSync(fp)) continue;
-    result.push({ file: fp.split(/[\\/]/).pop(), content: fs.readFileSync(fp, 'utf-8') });
+  for (const relPath of paths) {
+    const content = await storageRead(relPath);
+    if (content != null) result.push({ file: relPath.split('/').pop(), content });
   }
 
   if (result.length === 0) return new Response('Aucun livrable disponible', { status: 404 });
