@@ -89,14 +89,12 @@ export default function PipelineView({ cas }) {
   const [statuses,      setStatuses]      = useState({});
   const [running,       setRunning]       = useState(null);   // étape en cours
   const [chainRunning,  setChainRunning]  = useState(false);
-  const [log,           setLog]           = useState('');
   const [elapsed,       setElapsed]       = useState(0);
   const [stopInfo,      setStopInfo]      = useState(null);
   const [stepModels,    setStepModels]    = useState(DEFAULT_MODELS);
 
   const [briefState, setBriefState] = useState(null); // null | 'uploading' | 'done' | string(error)
 
-  const logRef     = useRef(null);
   const timerRef   = useRef(null);
   const chainRef   = useRef(false);
   const briefRef   = useRef(null);
@@ -110,9 +108,6 @@ export default function PipelineView({ cas }) {
   }, [cas]);
 
   useEffect(() => { fetchStatuses(); }, [fetchStatuses]);
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [log]);
 
   // ── Chrono ─────────────────────────────────────────────────────────────────
   function startTimer() {
@@ -126,7 +121,6 @@ export default function PipelineView({ cas }) {
   // ── Lancement d'une étape ──────────────────────────────────────────────────
   async function runStep(step) {
     setRunning(step);
-    setLog('');
     setStopInfo(null);
     startTimer();
 
@@ -158,7 +152,6 @@ export default function PipelineView({ cas }) {
         if (!line) continue;
         try {
           const ev = JSON.parse(line);
-          if (ev.type === 'log')   setLog(p => p + ev.text);
           if (ev.type === 'done') {
             await fetchStatuses();
             if (ev.verification?.verdict === 'FAIL') {
@@ -519,21 +512,6 @@ export default function PipelineView({ cas }) {
         </div>
       )}
 
-      {/* ── Console ──────────────────────────────────────────────────────── */}
-      {log && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sortie agent</span>
-            <button onClick={() => setLog('')} className="text-xs text-gray-300 hover:text-gray-500 transition-colors">
-              Effacer
-            </button>
-          </div>
-          <pre ref={logRef}
-            className="bg-[#1a1a1a] text-gray-100 text-xs p-4 h-56 sm:h-72 overflow-y-auto whitespace-pre-wrap leading-relaxed font-mono">
-            {log}
-          </pre>
-        </div>
-      )}
     </div>
   );
 }
