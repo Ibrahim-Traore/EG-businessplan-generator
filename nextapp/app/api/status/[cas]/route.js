@@ -20,7 +20,7 @@ export async function GET(req, { params }) {
     storageGlob(`livrables/${cas}/00-brief/*`),
   ]);
 
-  const result = { hasBrief: briefFiles.length > 0 };
+  const result = { hasBrief: briefFiles !== '(vide)' };
   for (const [step, r] of steps) {
     if (r) result[step] = r;
   }
