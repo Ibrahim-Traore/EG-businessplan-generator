@@ -40,8 +40,8 @@ export async function POST(req) {
     data: { slug: cas, name: cas, userId: session.user.id },
   });
 
-  // Créer le dossier
-  fs.mkdirSync(path.join(LIVRABLES_DIR, cas, '00-brief'), { recursive: true });
+  // Créer le dossier local si possible (no-op sur Vercel)
+  try { fs.mkdirSync(path.join(LIVRABLES_DIR, cas, '00-brief'), { recursive: true }); } catch {}
 
   return NextResponse.json({ cas }, { status: 201 });
 }

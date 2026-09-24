@@ -24,9 +24,11 @@ export async function DELETE(req, { params }) {
   // Supprimer en DB
   await prisma.project.delete({ where: { slug: cas } });
 
-  // Supprimer le dossier
-  const casDir = path.join(LIVRABLES_DIR, cas);
-  if (fs.existsSync(casDir)) fs.rmSync(casDir, { recursive: true, force: true });
+  // Supprimer le dossier local si présent (no-op sur Vercel)
+  try {
+    const casDir = path.join(LIVRABLES_DIR, cas);
+    if (fs.existsSync(casDir)) fs.rmSync(casDir, { recursive: true, force: true });
+  } catch {}
 
   return NextResponse.json({ deleted: cas });
 }
