@@ -55,7 +55,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-4 sm:p-8 max-w-2xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 w-full max-w-4xl mx-auto">
       <h1 className="text-xl font-bold text-gray-900 mb-1">Nouveau projet</h1>
       <p className="text-sm text-gray-500 mb-6">Créez un cas pilote et fournissez le brief client pour démarrer la chaîne.</p>
 
