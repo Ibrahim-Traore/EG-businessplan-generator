@@ -6,6 +6,7 @@ import { signOut } from 'next-auth/react';
 const NAV = [
   { href: '/dashboard', label: 'Nouveau projet' },
   { href: '/projects',  label: 'Mes projets'   },
+  { href: '/profile',   label: 'Profil'         },
 ];
 
 export default function Sidebar({ role }) {
@@ -44,6 +45,16 @@ export default function Sidebar({ role }) {
           );
         })}
 
+        {/* Déconnexion — juste sous les liens de navigation */}
+        <div className="pt-2">
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="w-full px-3 py-2.5 rounded-lg text-sm text-white/60 border border-white/15 hover:bg-white/10 hover:text-white transition-colors text-left"
+          >
+            Déconnexion
+          </button>
+        </div>
+
         {role === 'ADMIN' && (
           <div className="pt-5">
             <p className="px-3 pb-1.5 text-[10px] font-semibold text-white/35 uppercase tracking-widest">
@@ -62,16 +73,6 @@ export default function Sidebar({ role }) {
           </div>
         )}
       </nav>
-
-      {/* Déconnexion */}
-      <div className="px-3 py-4 border-t border-white/10">
-        <button
-          onClick={() => signOut({ callbackUrl: '/' })}
-          className="w-full px-3 py-2.5 rounded-lg text-sm text-white/60 border border-white/15 hover:bg-white/10 hover:text-white transition-colors text-left"
-        >
-          Déconnexion
-        </button>
-      </div>
     </aside>
   );
 }

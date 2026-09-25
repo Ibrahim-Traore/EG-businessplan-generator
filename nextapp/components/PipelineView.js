@@ -87,17 +87,22 @@ function ModelSelect({ value, onChange, disabled }) {
 
 export default function PipelineView({ cas }) {
   const [statuses,      setStatuses]      = useState({});
-  const [running,       setRunning]       = useState(null);   // étape en cours
+  const [running,       setRunning]       = useState(null);
   const [chainRunning,  setChainRunning]  = useState(false);
   const [elapsed,       setElapsed]       = useState(0);
+  const [chainElapsed,  setChainElapsed]  = useState(0);
+  const [stepTimings,   setStepTimings]   = useState({});
   const [stopInfo,      setStopInfo]      = useState(null);
   const [stepModels,    setStepModels]    = useState(DEFAULT_MODELS);
 
-  const [briefState, setBriefState] = useState(null); // null | 'uploading' | 'done' | string(error)
+  const [briefState, setBriefState] = useState(null);
 
-  const timerRef   = useRef(null);
-  const chainRef   = useRef(false);
-  const briefRef   = useRef(null);
+  const timerRef        = useRef(null);
+  const chainTimerRef   = useRef(null);
+  const chainRef        = useRef(false);
+  const briefRef        = useRef(null);
+  const elapsedRef      = useRef(0);
+  const chainElapsedRef = useRef(0);
 
   // ── Statuts ────────────────────────────────────────────────────────────────
   const fetchStatuses = useCallback(async () => {
@@ -109,13 +114,32 @@ export default function PipelineView({ cas }) {
 
   useEffect(() => { fetchStatuses(); }, [fetchStatuses]);
 
-  // ── Chrono ─────────────────────────────────────────────────────────────────
+  // Chargement des timings sauvegardés
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`timings-${cas}`);
+      if (raw) setStepTimings(JSON.parse(raw));
+    } catch {}
+  }, [cas]);
+
+  // ── Chrono étape ───────────────────────────────────────────────────────────
   function startTimer() {
     setElapsed(0);
+    elapsedRef.current = 0;
     clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setElapsed(s => s + 1), 1000);
+    timerRef.current = setInterval(() => { elapsedRef.current += 1; setElapsed(s => s + 1); }, 1000);
   }
   function stopTimer() { clearInterval(timerRef.current); }
+
+  // ── Chrono chaîne ──────────────────────────────────────────────────────────
+  function startChainTimer() {
+    setChainElapsed(0);
+    chainElapsedRef.current = 0;
+    clearInterval(chainTimerRef.current);
+    chainTimerRef.current = setInterval(() => { chainElapsedRef.current += 1; setChainElapsed(s => s + 1); }, 1000);
+  }
+  function stopChainTimer() { clearInterval(chainTimerRef.current); }
+
   function fmt(s) { return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 
   // ── Lancement d'une étape ──────────────────────────────────────────────────
@@ -164,6 +188,15 @@ export default function PipelineView({ cas }) {
       }
     }
     setRunning(null); stopTimer();
+    // Sauvegarder la durée de cette étape
+    const duration = elapsedRef.current;
+    if (duration > 0) {
+      setStepTimings(prev => {
+        const next = { ...prev, [step]: duration };
+        try { localStorage.setItem(`timings-${cas}`, JSON.stringify(next)); } catch {}
+        return next;
+      });
+    }
     return ok;
   }
 
@@ -179,22 +212,23 @@ export default function PipelineView({ cas }) {
   async function runChain() {
     setChainRunning(true);
     chainRef.current = true;
-    // Snapshot des statuts au moment du lancement (closure stable)
+    startChainTimer();
     const snap = { ...statuses };
     for (const step of ALL_STEPS) {
       if (!chainRef.current) break;
       const verdict = snap[step]?.verdict;
-      // Sauter les étapes déjà validées
       if (verdict === 'PASS' || verdict === 'WARN') continue;
       const ok = await runStep(step);
       if (!ok) break;
     }
+    stopChainTimer();
     setChainRunning(false);
     chainRef.current = false;
   }
 
   function cancelChain() {
     chainRef.current = false;
+    stopChainTimer();
     stopStep();
   }
 
@@ -319,7 +353,10 @@ export default function PipelineView({ cas }) {
              'Prêt à lancer'}
           </span>
           <div className="flex items-center gap-2 shrink-0">
-            {(running || chainRunning) && (
+            {chainRunning && (
+              <span className="text-sm font-mono text-gray-500" title="Durée chaîne">{fmt(chainElapsed)}</span>
+            )}
+            {running && !chainRunning && (
               <span className="text-sm font-mono text-gray-500">{fmt(elapsed)}</span>
             )}
             {!running && !chainRunning && statuses['redacteur']?.verdict && (
@@ -458,7 +495,14 @@ export default function PipelineView({ cas }) {
                         {STEP_LABELS[stepKey]}
                       </span>
                       {status?.verdict && !isRunning && <VerdictBadge verdict={status.verdict} />}
-                      {isRunning && <span className="text-xs text-eg-mid font-medium animate-pulse shrink-0">en cours…</span>}
+                      {!isRunning && stepTimings[stepKey] !== undefined && (
+                        <span className="text-xs text-gray-400 font-mono shrink-0">{fmt(stepTimings[stepKey])}</span>
+                      )}
+                      {isRunning && (
+                        <span className="text-xs text-eg-mid font-medium animate-pulse shrink-0">
+                          {fmt(elapsed)} en cours
+                        </span>
+                      )}
                       {/* Actions : toujours sur la même ligne que le label sur sm+, ligne propre sur mobile */}
                       <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto pl-5 sm:pl-0">
                         <ModelSelect

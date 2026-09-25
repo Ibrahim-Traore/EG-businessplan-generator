@@ -1,20 +1,63 @@
 export const runtime = 'nodejs';
 
-import Link          from 'next/link';
-import { auth }      from '@/lib/auth.js';
-import { prisma }    from '@/lib/prisma.js';
-import { redirect }  from 'next/navigation';
+import Link           from 'next/link';
+import { auth }       from '@/lib/auth.js';
+import { prisma }     from '@/lib/prisma.js';
+import { redirect }   from 'next/navigation';
+import ProjectsList   from '@/components/ProjectsList.js';
+
+const CHAIN_STEPS = [
+  'cadrage-t1', 'cadrage-t2', 'analyste-marche',
+  'modele-economique', 'modele-financier', 'audit-final', 'redacteur',
+];
+
+function computeChainStatus(livrables) {
+  const verds = {};
+  for (const l of livrables) {
+    const m = l.path.match(/verification-([^/]+)\.json$/);
+    if (!m) continue;
+    try {
+      const d    = JSON.parse(l.content);
+      const step = d.step || m[1];
+      verds[step] = d.verdict;
+    } catch {}
+  }
+  const done  = CHAIN_STEPS.filter(s => verds[s] === 'PASS' || verds[s] === 'WARN').length;
+  const fail  = CHAIN_STEPS.filter(s => verds[s] === 'FAIL').length;
+  const total = CHAIN_STEPS.length;
+
+  if (done === total)  return { type: 'complete', done, total };
+  if (fail > 0)        return { type: 'fail',     done, total };
+  if (done > 0)        return { type: 'partial',  done, total };
+  return { type: 'empty', done: 0, total };
+}
 
 export default async function ProjectsPage() {
   const session = await auth();
   if (!session?.user) redirect('/');
 
   const where = session.user.role === 'ADMIN' ? {} : { userId: session.user.id };
-  const projects = await prisma.project.findMany({
+
+  const rawProjects = await prisma.project.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    select: { slug: true, name: true, createdAt: true },
+    select: {
+      slug: true,
+      name: true,
+      createdAt: true,
+      livrables: {
+        where: { path: { contains: 'verification-' } },
+        select: { path: true, content: true },
+      },
+    },
   });
+
+  const projects = rawProjects.map(({ slug, name, createdAt, livrables }) => ({
+    slug,
+    name,
+    createdAt: createdAt.toISOString(),
+    status:    computeChainStatus(livrables),
+  }));
 
   return (
     <div className="p-4 sm:p-8 max-w-3xl mx-auto">
@@ -33,31 +76,7 @@ export default async function ProjectsPage() {
         </Link>
       </div>
 
-      {projects.length === 0 ? (
-        <div className="text-center py-20 text-gray-400 text-sm bg-white rounded-xl border border-gray-200">
-          <p className="text-3xl mb-3">📋</p>
-          <p>Aucun projet. Créez votre premier cas pilote.</p>
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {projects.map(({ slug, createdAt }) => (
-            <li key={slug}>
-              <Link
-                href={`/projects/${slug}`}
-                className="flex items-center justify-between px-4 py-3.5 bg-white border border-gray-200 rounded-xl hover:border-eg-mid hover:shadow-sm transition-all group"
-              >
-                <div>
-                  <span className="text-sm font-semibold text-gray-800 group-hover:text-eg-dark">{slug}</span>
-                  <span className="block text-xs text-gray-400 mt-0.5">
-                    {new Date(createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                  </span>
-                </div>
-                <span className="text-xs text-gray-400 group-hover:text-eg-mid transition-colors">Voir →</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ProjectsList initialProjects={projects} />
     </div>
   );
 }
