@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Link from 'next/link';
+import Link          from 'next/link';
+import ChatInterface from '@/components/ChatInterface';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -334,7 +335,22 @@ export default function PipelineView({ cas }) {
         )}
       </div>
 
-      {/* ── Barre de lancement ───────────────────────────────────────────── */}
+      {/* ── Mode questionnaire : chat avec l'agent ───────────────────────── */}
+      {statuses.hasBrief === false && !statuses.hasResponses && (
+        <div className="bg-white rounded-xl border border-eg-mid/30 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 bg-[#f8faf7] flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-eg-mid flex items-center justify-center text-white text-[10px] font-bold shrink-0">EG</div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Entretien de cadrage</p>
+              <p className="text-xs text-gray-500">L'agent vous pose des questions pour constituer le brief du projet.</p>
+            </div>
+          </div>
+          <ChatInterface cas={cas} onBriefSaved={fetchStatuses} />
+        </div>
+      )}
+
+      {/* ── Barre de lancement (visible uniquement si brief ou réponses disponibles) ─ */}
+      {(statuses.hasBrief !== false || statuses.hasResponses) && (
       <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex flex-wrap items-center gap-3">
         {chainRunning ? (
           <button onClick={cancelChain}
@@ -372,6 +388,7 @@ export default function PipelineView({ cas }) {
           </div>
         </div>
       </div>
+      )}
 
       {/* ── Bannière d'erreur ─────────────────────────────────────────────── */}
       {stopInfo && (
@@ -397,7 +414,8 @@ export default function PipelineView({ cas }) {
         </div>
       )}
 
-      {/* ── Stepper ───────────────────────────────────────────────────────── */}
+      {/* ── Stepper + cards (masqués pendant l'entretien) ─────────────────── */}
+      {(statuses.hasBrief !== false || statuses.hasResponses) && (
       <div className="bg-white rounded-xl border border-gray-200 px-4 py-5 overflow-x-auto">
         <div className="flex items-start w-full min-w-[500px]">
           {STEPPER_STEPS.map(({ key, label }, i) => {
@@ -442,6 +460,7 @@ export default function PipelineView({ cas }) {
 
       {/* ── Cards d'étapes ───────────────────────────────────────────────── */}
       <div className="space-y-5">
+
         {CARDS.map(card => {
           const st = cardStatus(card.steps);
           const statusLabel =
@@ -544,6 +563,7 @@ export default function PipelineView({ cas }) {
           );
         })}
       </div>
+      )} {/* fin du bloc conditionnel stepper+cards */}
 
       {/* ── Téléchargement ───────────────────────────────────────────────── */}
       {statuses['redacteur']?.verdict && !running && !chainRunning && (
