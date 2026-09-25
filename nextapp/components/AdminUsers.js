@@ -6,7 +6,7 @@ export default function AdminUsers() {
   const [name,     setName]     = useState('');
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
-  const [role,     setRole]     = useState('CLIENT');
+  const [role,     setRole]     = useState('MEMBRE');
   const [msg,      setMsg]      = useState('');
   const [err,      setErr]      = useState('');
 
@@ -26,7 +26,7 @@ export default function AdminUsers() {
     });
     if (r.ok) {
       setMsg('Utilisateur créé.');
-      setName(''); setEmail(''); setPassword(''); setRole('CLIENT');
+      setName(''); setEmail(''); setPassword(''); setRole('MEMBRE');
       load();
     } else {
       setErr(await r.text() || 'Erreur.');
@@ -82,7 +82,7 @@ export default function AdminUsers() {
                 value={role} onChange={e => setRole(e.target.value)}
                 className="w-full px-3 py-2.5 bg-[#f8f8f5] border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-eg-mid/40 focus:border-eg-mid"
               >
-                <option value="CLIENT">CLIENT</option>
+                <option value="MEMBRE">MEMBRE</option>
                 <option value="ADMIN">ADMIN</option>
               </select>
             </div>

@@ -12,7 +12,7 @@ model User {
   email     String    @unique
   password  String
   name      String?
-  role      String    @default("CLIENT")
+  role      String    @default("MEMBRE")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   projects  Project[]

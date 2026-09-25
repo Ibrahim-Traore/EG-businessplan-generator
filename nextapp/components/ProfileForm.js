@@ -93,7 +93,7 @@ export default function ProfileForm({ user }) {
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Rôle</label>
             <p className="text-sm text-gray-500 border border-gray-100 rounded-lg px-3 py-2 bg-gray-50">
-              {user.role === 'ADMIN' ? 'Administrateur' : 'Client'}
+              {user.role === 'ADMIN' ? 'Administrateur' : 'Membre'}
             </p>
           </div>
           <Msg msg={msgInfo} />

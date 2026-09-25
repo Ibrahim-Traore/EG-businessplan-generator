@@ -25,7 +25,7 @@ export async function POST(req) {
 
   const { email, password, name, role } = await req.json();
   if (!email || !password) return new Response('Email et mot de passe obligatoires.', { status: 400 });
-  if (!['ADMIN', 'CLIENT'].includes(role)) return new Response('Rôle invalide.', { status: 400 });
+  if (!['ADMIN', 'MEMBRE'].includes(role)) return new Response('Rôle invalide.', { status: 400 });
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return new Response('Email déjà utilisé.', { status: 409 });
