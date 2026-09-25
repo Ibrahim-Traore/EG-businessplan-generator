@@ -95,10 +95,7 @@ export default function PipelineView({ cas }) {
   const [stopInfo,      setStopInfo]      = useState(null);
   const [stepModels,    setStepModels]    = useState(DEFAULT_MODELS);
 
-  const [briefState,      setBriefState]      = useState(null);
-  const [questionnaire,   setQuestionnaire]   = useState(null);
-  const [responses,       setResponses]       = useState('');
-  const [savingResponses, setSavingResponses] = useState(false);
+  const [briefState, setBriefState] = useState(null);
 
   const timerRef        = useRef(null);
   const chainTimerRef   = useRef(null);
@@ -125,17 +122,6 @@ export default function PipelineView({ cas }) {
     } catch {}
   }, [cas]);
 
-  // Lecture du questionnaire après T1 complété
-  useEffect(() => {
-    if (statuses.hasBrief !== false) return;
-    if (!statuses['cadrage-t1']?.verdict) return;
-    if (statuses.hasResponses) return;
-    if (questionnaire !== null) return;
-    fetch(`/api/reponses/${cas}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.questionnaire) setQuestionnaire(data.questionnaire); })
-      .catch(() => {});
-  }, [cas, statuses, questionnaire]);
 
   // ── Chrono étape ───────────────────────────────────────────────────────────
   function startTimer() {
@@ -231,6 +217,8 @@ export default function PipelineView({ cas }) {
     const snap = { ...statuses };
     for (const step of ALL_STEPS) {
       if (!chainRef.current) break;
+      // Mode questionnaire : T1 sauté car les réponses sont déjà enregistrées
+      if (step === 'cadrage-t1' && snap.hasResponses) continue;
       const verdict = snap[step]?.verdict;
       if (verdict === 'PASS' || verdict === 'WARN') continue;
       const ok = await runStep(step);
@@ -247,19 +235,6 @@ export default function PipelineView({ cas }) {
     stopStep();
   }
 
-  async function saveResponses() {
-    if (!responses.trim()) return;
-    setSavingResponses(true);
-    try {
-      const r = await fetch(`/api/reponses/${cas}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: responses }),
-      });
-      if (r.ok) await fetchStatuses();
-    } catch {}
-    setSavingResponses(false);
-  }
 
   // ── Statut stepper ─────────────────────────────────────────────────────────
   function stepperStatus(keys) {
@@ -288,8 +263,6 @@ export default function PipelineView({ cas }) {
   const hasPass   = ALL_STEPS.some(k => statuses[k]?.verdict === 'PASS' || statuses[k]?.verdict === 'WARN');
   const hasFail   = ALL_STEPS.some(k => statuses[k]?.verdict === 'FAIL');
   const chainLabel = hasFail ? 'Reprendre depuis l\'échec' : hasPass ? 'Reprendre la chaîne' : 'Lancer la chaîne complète';
-
-  const questionnairePending = statuses.hasBrief === false && !statuses.hasResponses;
 
   return (
     <div className="p-4 sm:p-5 w-full space-y-4">
@@ -361,84 +334,8 @@ export default function PipelineView({ cas }) {
         )}
       </div>
 
-      {/* ── Mode questionnaire ───────────────────────────────────────────── */}
-      {questionnairePending && (
-        <div className="bg-white rounded-xl border border-eg-mid/40 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2 bg-[#f8faf7]">
-            <span className="w-6 h-6 rounded-full bg-eg-mid/15 flex items-center justify-center text-eg-mid text-xs font-bold">Q</span>
-            <p className="text-sm font-semibold text-gray-800">Mode questionnaire — Cadrage</p>
-          </div>
-
-          {/* Phase 1 : T1 pas encore lancé */}
-          {!statuses['cadrage-t1']?.verdict && (
-            <div className="px-4 py-4 space-y-3">
-              <p className="text-sm text-gray-600">
-                Aucun brief importé. L'agent va générer un questionnaire adapté à la typologie du projet.
-                Répondez-y, puis la chaîne complète sera déverrouillée.
-              </p>
-              <button
-                onClick={() => runStep('cadrage-t1')}
-                disabled={!!running || chainRunning}
-                className="flex items-center gap-2 px-4 py-2 bg-eg-mid text-white text-sm font-semibold rounded-lg hover:bg-eg-muted transition-colors shadow-sm disabled:opacity-50"
-              >
-                {running === 'cadrage-t1' ? (
-                  <>
-                    <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".25"/><path d="M21 12a9 9 0 01-9-9"/>
-                    </svg>
-                    Génération en cours… {fmt(elapsed)}
-                  </>
-                ) : (
-                  <>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                    Générer le questionnaire
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-
-          {/* Phase 2 : T1 terminé, réponses non encore saisies */}
-          {statuses['cadrage-t1']?.verdict && !statuses.hasResponses && (
-            <div className="px-4 py-4 space-y-4">
-              {questionnaire ? (
-                <>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Questionnaire généré par l'agent</p>
-                    <pre className="text-sm text-gray-700 bg-[#f8f8f5] rounded-lg p-3 border border-gray-200 whitespace-pre-wrap font-sans overflow-y-auto max-h-72 leading-relaxed">
-                      {questionnaire}
-                    </pre>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                      Vos réponses
-                    </label>
-                    <textarea
-                      value={responses}
-                      onChange={e => setResponses(e.target.value)}
-                      placeholder="Copiez-collez vos réponses au questionnaire en conservant la structure proposée…"
-                      rows={8}
-                      className="w-full px-3 py-2.5 text-sm text-gray-700 bg-[#f8f8f5] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-eg-mid/40 focus:border-eg-mid resize-y"
-                    />
-                  </div>
-                  <button
-                    onClick={saveResponses}
-                    disabled={savingResponses || !responses.trim()}
-                    className="flex items-center gap-2 px-4 py-2 bg-eg-mid text-white text-sm font-semibold rounded-lg hover:bg-eg-muted transition-colors shadow-sm disabled:opacity-50"
-                  >
-                    {savingResponses ? 'Sauvegarde…' : 'Sauvegarder les réponses →'}
-                  </button>
-                </>
-              ) : (
-                <p className="text-sm text-gray-400 italic">Chargement du questionnaire…</p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* ── Barre de lancement ───────────────────────────────────────────── */}
-      <div className={`bg-white rounded-xl border border-gray-200 px-4 py-3 flex flex-wrap items-center gap-3 ${questionnairePending ? 'opacity-40 pointer-events-none' : ''}`}>
+      <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex flex-wrap items-center gap-3">
         {chainRunning ? (
           <button onClick={cancelChain}
             className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors shadow-sm">
