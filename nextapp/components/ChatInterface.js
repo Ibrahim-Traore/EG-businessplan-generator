@@ -42,8 +42,10 @@ export default function ChatInterface({ cas, onBriefSaved }) {
       const res = await fetch(`/api/chat/${cas}`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        // API: toujours commencer par TRIGGER (user) puis l'historique
-        body:    JSON.stringify({ messages: [TRIGGER, ...history] }),
+        // API: strip UI-only fields (streaming), toujours commencer par TRIGGER
+        body:    JSON.stringify({
+          messages: [TRIGGER, ...history.map(({ role, content }) => ({ role, content }))],
+        }),
       });
       if (!res.ok) throw new Error(await res.text());
 
