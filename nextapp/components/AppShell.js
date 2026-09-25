@@ -2,14 +2,14 @@
 import { useState }    from 'react';
 import Sidebar         from './Sidebar.js';
 
-export default function AppShell({ role, children }) {
+export default function AppShell({ role, name, email, children }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       {/* Sidebar desktop — toujours visible ≥ md */}
       <div className="hidden md:flex">
-        <Sidebar role={role} onClose={() => {}} />
+        <Sidebar role={role} name={name} email={email} onClose={() => {}} />
       </div>
 
       {/* Overlay mobile */}
@@ -22,7 +22,7 @@ export default function AppShell({ role, children }) {
 
       {/* Sidebar mobile — drawer slide-in */}
       <div className={`fixed top-0 left-0 h-full z-40 md:hidden transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
-        <Sidebar role={role} onClose={() => setOpen(false)} />
+        <Sidebar role={role} name={name} email={email} onClose={() => setOpen(false)} />
       </div>
 
       {/* Contenu principal */}

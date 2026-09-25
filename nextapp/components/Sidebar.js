@@ -9,13 +9,26 @@ const NAV = [
   { href: '/profile',   label: 'Profil'         },
 ];
 
-export default function Sidebar({ role }) {
+function initials(name, email) {
+  const source = name || email || '?';
+  return source
+    .trim()
+    .split(/\s+/)
+    .map(w => w[0] ?? '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+export default function Sidebar({ role, name, email }) {
   const path = usePathname();
+  const ini  = initials(name, email);
+  const displayName = name || email || '—';
 
   return (
-    <aside className="w-60 min-h-screen flex flex-col bg-eg-dark text-white shrink-0">
+    <aside className="w-60 h-screen flex flex-col bg-eg-dark text-white shrink-0">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-white/10">
+      <div className="px-5 py-5 border-b border-white/10 shrink-0">
         <img
           src="/eg-logo.svg"
           alt="Efficience Globale"
@@ -27,7 +40,7 @@ export default function Sidebar({ role }) {
       </div>
 
       {/* Navigation principale */}
-      <nav className="flex-1 px-3 py-5 space-y-0.5">
+      <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
         {NAV.map(({ href, label }) => {
           const active = path === href || path.startsWith(href + '/');
           return (
@@ -64,11 +77,24 @@ export default function Sidebar({ role }) {
         )}
       </nav>
 
-      {/* Déconnexion — tout en bas */}
-      <div className="px-3 py-4 border-t border-white/10">
+      {/* Utilisateur + Déconnexion — tout en bas */}
+      <div className="px-3 py-4 border-t border-white/10 shrink-0 space-y-3">
+        {/* Avatar + nom */}
+        <div className="flex items-center gap-3 px-1">
+          <div className="w-8 h-8 rounded-full bg-eg-mid flex items-center justify-center text-white text-xs font-bold shrink-0 select-none">
+            {ini}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm text-white font-medium truncate leading-tight">{displayName}</p>
+            <p className="text-[10px] text-white/40 mt-0.5">
+              {role === 'ADMIN' ? 'Administrateur' : 'Membre'}
+            </p>
+          </div>
+        </div>
+        {/* Bouton déconnexion */}
         <button
           onClick={() => signOut({ callbackUrl: '/' })}
-          className="w-full px-3 py-2.5 rounded-lg text-sm text-white/60 border border-white/15 hover:bg-white/10 hover:text-white transition-colors text-left"
+          className="w-full px-3 py-2 rounded-lg text-sm text-white/60 border border-white/15 hover:bg-white/10 hover:text-white transition-colors text-left"
         >
           Déconnexion
         </button>
