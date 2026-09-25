@@ -416,6 +416,7 @@ export default function PipelineView({ cas }) {
 
       {/* ── Stepper + cards (masqués pendant l'entretien) ─────────────────── */}
       {(statuses.hasBrief !== false || statuses.hasResponses) && (
+      <>
       <div className="bg-white rounded-xl border border-gray-200 px-4 py-5 overflow-x-auto">
         <div className="flex items-start w-full min-w-[500px]">
           {STEPPER_STEPS.map(({ key, label }, i) => {
@@ -563,6 +564,7 @@ export default function PipelineView({ cas }) {
           );
         })}
       </div>
+      </>
       )} {/* fin du bloc conditionnel stepper+cards */}
 
       {/* ── Téléchargement ───────────────────────────────────────────────── */}
