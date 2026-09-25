@@ -499,9 +499,10 @@ export default function PipelineView({ cas }) {
                         <span className="text-xs text-gray-400 font-mono shrink-0">{fmt(stepTimings[stepKey])}</span>
                       )}
                       {isRunning && (
-                        <span className="text-xs text-eg-mid font-medium animate-pulse shrink-0">
-                          {fmt(elapsed)} en cours
-                        </span>
+                        <>
+                          <span className="text-xs text-eg-mid font-medium animate-pulse shrink-0">en cours…</span>
+                          <span className="text-xs text-gray-400 font-mono shrink-0">{fmt(elapsed)}</span>
+                        </>
                       )}
                       {/* Actions : toujours sur la même ligne que le label sur sm+, ligne propre sur mobile */}
                       <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto pl-5 sm:pl-0">
