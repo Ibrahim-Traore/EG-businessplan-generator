@@ -87,8 +87,9 @@ function ModelSelect({ value, onChange, disabled }) {
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 export default function PipelineView({ cas }) {
-  const [statuses,      setStatuses]      = useState({});
-  const [running,       setRunning]       = useState(null);
+  const [statuses,       setStatuses]      = useState({});
+  const [statusLoading,  setStatusLoading] = useState(true);
+  const [running,        setRunning]       = useState(null);
   const [chainRunning,  setChainRunning]  = useState(false);
   const [elapsed,       setElapsed]       = useState(0);
   const [chainElapsed,  setChainElapsed]  = useState(0);
@@ -111,9 +112,15 @@ export default function PipelineView({ cas }) {
       const r = await fetch(`/api/status/${cas}`);
       if (r.ok) setStatuses(await r.json());
     } catch {}
+    finally { setStatusLoading(false); }
   }, [cas]);
 
-  useEffect(() => { fetchStatuses(); }, [fetchStatuses]);
+  // Réinitialiser à chaque changement de projet pour éviter l'affichage de l'état précédent
+  useEffect(() => {
+    setStatuses({});
+    setStatusLoading(true);
+    fetchStatuses();
+  }, [fetchStatuses]);
 
   // Chargement des timings sauvegardés
   useEffect(() => {
@@ -336,7 +343,7 @@ export default function PipelineView({ cas }) {
       </div>
 
       {/* ── Mode questionnaire : chat avec l'agent ───────────────────────── */}
-      {statuses.hasBrief === false && !statuses.hasResponses && (
+      {!statusLoading && statuses.hasBrief === false && !statuses.hasResponses && (
         <div className="bg-white rounded-xl border border-eg-mid/30 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 bg-[#f8faf7] flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-eg-mid flex items-center justify-center text-white text-[10px] font-bold shrink-0">EG</div>
@@ -350,7 +357,7 @@ export default function PipelineView({ cas }) {
       )}
 
       {/* ── Barre de lancement (visible uniquement si brief ou réponses disponibles) ─ */}
-      {(statuses.hasBrief !== false || statuses.hasResponses) && (
+      {!statusLoading && (statuses.hasBrief !== false || statuses.hasResponses) && (
       <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex flex-wrap items-center gap-3">
         {chainRunning ? (
           <button onClick={cancelChain}
@@ -415,7 +422,7 @@ export default function PipelineView({ cas }) {
       )}
 
       {/* ── Stepper + cards (masqués pendant l'entretien) ─────────────────── */}
-      {(statuses.hasBrief !== false || statuses.hasResponses) && (
+      {!statusLoading && (statuses.hasBrief !== false || statuses.hasResponses) && (
       <>
       <div className="bg-white rounded-xl border border-gray-200 px-4 py-5 overflow-x-auto">
         <div className="flex items-start w-full min-w-[500px]">
