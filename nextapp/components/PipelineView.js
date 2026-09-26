@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Link          from 'next/link';
-import ChatInterface from '@/components/ChatInterface';
+import Link from 'next/link';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -352,22 +351,8 @@ export default function PipelineView({ cas }) {
         )}
       </div>
 
-      {/* ── Mode questionnaire : chat avec l'agent ───────────────────────── */}
-      {!statusLoading && statuses.hasBrief === false && !statuses.hasResponses && (
-        <div className="bg-white rounded-xl border border-eg-mid/30 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 bg-[#f8faf7] flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-eg-mid flex items-center justify-center text-white text-[10px] font-bold shrink-0">EG</div>
-            <div>
-              <p className="text-sm font-semibold text-gray-800">Entretien de cadrage</p>
-              <p className="text-xs text-gray-500">L'agent vous pose des questions pour constituer le brief du projet.</p>
-            </div>
-          </div>
-          <ChatInterface cas={cas} onBriefSaved={fetchStatuses} />
-        </div>
-      )}
-
-      {/* ── Barre de lancement (visible uniquement si brief ou réponses disponibles) ─ */}
-      {!statusLoading && (statuses.hasBrief !== false || statuses.hasResponses) && (
+      {/* ── Barre de lancement ───────────────────────────────────────────── */}
+      {!statusLoading && (
       <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex flex-wrap items-center gap-3">
         {chainRunning ? (
           <button onClick={cancelChain}
@@ -431,8 +416,8 @@ export default function PipelineView({ cas }) {
         </div>
       )}
 
-      {/* ── Stepper + cards (masqués pendant l'entretien) ─────────────────── */}
-      {!statusLoading && (statuses.hasBrief !== false || statuses.hasResponses) && (
+      {/* ── Stepper + cards ──────────────────────────────────────────────── */}
+      {!statusLoading && (
       <>
       <div className="bg-white rounded-xl border border-gray-200 px-4 py-5 overflow-x-auto">
         <div className="flex items-start w-full min-w-[500px]">
