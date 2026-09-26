@@ -107,20 +107,30 @@ export default function PipelineView({ cas }) {
   const chainElapsedRef = useRef(0);
 
   // ── Statuts ────────────────────────────────────────────────────────────────
+  // Utilisé pour les rafraîchissements manuels (ex. après sauvegarde du brief)
   const fetchStatuses = useCallback(async () => {
     try {
       const r = await fetch(`/api/status/${cas}`);
       if (r.ok) setStatuses(await r.json());
     } catch {}
-    finally { setStatusLoading(false); }
   }, [cas]);
 
-  // Réinitialiser à chaque changement de projet pour éviter l'affichage de l'état précédent
+  // Chargement initial + reset à chaque changement de projet.
+  // Le flag `cancelled` évite la race condition : si cas change pendant le fetch,
+  // le résultat de l'ancien fetch est ignoré.
   useEffect(() => {
+    let cancelled = false;
     setStatuses({});
     setStatusLoading(true);
-    fetchStatuses();
-  }, [fetchStatuses]);
+
+    fetch(`/api/status/${cas}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (!cancelled && data) setStatuses(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setStatusLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [cas]);
 
   // Chargement des timings sauvegardés
   useEffect(() => {
