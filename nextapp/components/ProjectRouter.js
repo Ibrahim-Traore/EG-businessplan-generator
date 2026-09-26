@@ -36,8 +36,11 @@ export default function ProjectRouter({ cas }) {
     );
   }
 
-  // Mode questionnaire sans brief ni réponses → vue chatbot dédiée
-  if (status.hasBrief === false && !status.hasResponses) {
+  // Mode questionnaire : brief absent, pas de réponses, ET aucun step de chaîne lancé
+  const hasChainWork = Object.keys(status).some(
+    k => k !== 'hasBrief' && k !== 'hasResponses' && status[k]?.verdict
+  );
+  if (status.hasBrief === false && !status.hasResponses && !hasChainWork) {
     return <ChatView cas={cas} onBriefSaved={refreshStatus} />;
   }
 
