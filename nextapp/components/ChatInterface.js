@@ -4,9 +4,31 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 const SYNTHESIS_START = '<!--SYNTHESE-->';
 const SYNTHESIS_END   = '<!--/SYNTHESE-->';
 
-// Premier message caché envoyé à l'API pour déclencher le greeting
-// — jamais affiché dans l'interface
+// Premier message caché envoyé à l'API pour déclencher le greeting — jamais affiché
 const TRIGGER = { role: 'user', content: '[DEBUT ENTRETIEN]' };
+
+function historyKey(cas) { return `chat-history-${cas}`; }
+
+function loadHistory(cas) {
+  try {
+    const raw = localStorage.getItem(historyKey(cas));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function saveHistory(cas, messages) {
+  try {
+    // Ne sauvegarder que les messages finaux (pas les placeholders en cours de streaming)
+    const toSave = messages.filter(m => !m.streaming);
+    if (toSave.length > 0) localStorage.setItem(historyKey(cas), JSON.stringify(toSave));
+  } catch {}
+}
+
+function clearHistory(cas) {
+  try { localStorage.removeItem(historyKey(cas)); } catch {}
+}
 
 export default function ChatInterface({ cas, onBriefSaved }) {
   const [uiMessages, setUiMessages] = useState([]);
@@ -18,17 +40,15 @@ export default function ChatInterface({ cas, onBriefSaved }) {
   const inputRef  = useRef(null);
   const didInit   = useRef(false);
 
-  // Scroll automatique en bas à chaque nouveau token
+  // Scroll automatique en bas à chaque nouveau message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [uiMessages]);
 
-  // Greeting initial au montage
+  // Sauvegarde automatique dans localStorage à chaque message finalisé
   useEffect(() => {
-    if (didInit.current) return;
-    didInit.current = true;
-    fetchNext([]);
-  }, []); // eslint-disable-line
+    saveHistory(cas, uiMessages);
+  }, [uiMessages, cas]);
 
   const fetchNext = useCallback(async (history) => {
     setStreaming(true);
@@ -42,7 +62,6 @@ export default function ChatInterface({ cas, onBriefSaved }) {
       const res = await fetch(`/api/chat/${cas}`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        // API: strip UI-only fields (streaming), toujours commencer par TRIGGER
         body:    JSON.stringify({
           messages: [TRIGGER, ...history.map(({ role, content }) => ({ role, content }))],
         }),
@@ -96,7 +115,6 @@ export default function ChatInterface({ cas, onBriefSaved }) {
     const ei = text.indexOf(SYNTHESIS_END);
 
     if (si !== -1 && ei > si) {
-      // Synthèse détectée
       const synthesis = text.slice(si + SYNTHESIS_START.length, ei).trim();
       const before    = text.slice(0, si).trim();
       const display   = before || 'J\'ai recueilli toutes les informations nécessaires. Enregistrement du brief…';
@@ -106,7 +124,6 @@ export default function ChatInterface({ cas, onBriefSaved }) {
         { role: 'assistant', content: display, streaming: false },
       ]);
 
-      // Sauvegarde
       try {
         const r = await fetch(`/api/reponses/${cas}`, {
           method:  'POST',
@@ -114,19 +131,43 @@ export default function ChatInterface({ cas, onBriefSaved }) {
           body:    JSON.stringify({ content: synthesis }),
         });
         if (!r.ok) throw new Error(await r.text());
+        clearHistory(cas); // brief sauvegardé → effacer l'historique localStorage
         setBriefSaved(true);
         onBriefSaved?.();
       } catch (e) {
         setError(`Erreur lors de la sauvegarde du brief : ${e.message}`);
       }
     } else {
-      // Message normal
       setUiMessages(prev => [
         ...prev.slice(0, -1),
         { role: 'assistant', content: text, streaming: false },
       ]);
     }
   }
+
+  // Initialisation au montage : reprendre l'entretien en cours ou démarrer
+  useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
+
+    const saved = loadHistory(cas);
+
+    if (saved.length === 0) {
+      // Nouvel entretien — greeting de l'agent
+      fetchNext([]);
+      return;
+    }
+
+    // Reprendre : restaurer les messages précédents
+    setUiMessages(saved);
+
+    const lastRole = saved[saved.length - 1]?.role;
+    if (lastRole === 'user') {
+      // La réponse de l'agent n'a pas été capturée (navigation mid-stream) → relancer
+      fetchNext(saved);
+    }
+    // Si dernier message est 'assistant', attendre la saisie de l'utilisateur
+  }, []); // eslint-disable-line
 
   function handleSend() {
     const text = input.trim();
@@ -200,7 +241,7 @@ export default function ChatInterface({ cas, onBriefSaved }) {
         {error && (
           <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
             {error}
-            <button className="ml-2 underline" onClick={() => { setError(null); fetchNext(uiMessages); }}>Réessayer</button>
+            <button className="ml-2 underline" onClick={() => { setError(null); fetchNext(uiMessages.filter(m => !m.streaming)); }}>Réessayer</button>
           </div>
         )}
         <div ref={bottomRef} />
