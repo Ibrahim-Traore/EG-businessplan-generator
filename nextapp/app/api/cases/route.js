@@ -11,8 +11,7 @@ export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json([], { status: 401 });
 
-  // ADMIN voit tous les projets, CLIENT voit les siens
-  const where = session.user.role === 'ADMIN' ? {} : { userId: session.user.id };
+  const where = { userId: session.user.id };
   const projects = await prisma.project.findMany({
     where,
     orderBy: { createdAt: 'desc' },

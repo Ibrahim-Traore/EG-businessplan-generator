@@ -2,9 +2,8 @@ import { auth }   from './auth.js';
 import { prisma } from './prisma.js';
 
 /**
- * Vérifie que l'utilisateur connecté a accès au projet `slug`.
+ * Vérifie que l'utilisateur connecté est propriétaire du projet `slug`.
  * Retourne { project, session } ou { error, status }.
- * L'ADMIN peut accéder à tous les projets.
  */
 export async function requireProjectAccess(slug) {
   const session = await auth();
@@ -13,7 +12,7 @@ export async function requireProjectAccess(slug) {
   const project = await prisma.project.findUnique({ where: { slug } });
   if (!project) return { error: 'Projet introuvable', status: 404 };
 
-  if (project.userId !== session.user.id && session.user.role !== 'ADMIN') {
+  if (project.userId !== session.user.id) {
     return { error: 'Accès interdit', status: 403 };
   }
 

@@ -36,7 +36,7 @@ export default async function ProjectsPage() {
   const session = await auth();
   if (!session?.user) redirect('/');
 
-  const where = session.user.role === 'ADMIN' ? {} : { userId: session.user.id };
+  const where = { userId: session.user.id };
 
   const rawProjects = await prisma.project.findMany({
     where,
@@ -65,7 +65,7 @@ export default async function ProjectsPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">Mes projets</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {session.user.role === 'ADMIN' ? 'Tous les projets (vue admin).' : 'Vos cas pilotes personnels.'}
+            Vos cas pilotes personnels.
           </p>
         </div>
         <Link
